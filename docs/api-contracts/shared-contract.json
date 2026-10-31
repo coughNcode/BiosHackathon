@@ -1,0 +1,56 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "title": "PayGuard AI Shared Event Contract",
+  "description": "Shared event schema for Blue guard, Red attacker, collector, and dashboard. All services post events to this format.",
+  "version": "1.0.0",
+  "event": {
+    "type": "object",
+    "required": ["event_id", "ts", "kind", "layer", "decision", "reason", "trace_id"],
+    "properties": {
+      "event_id": { "type": "string", "description": "Unique event identifier" },
+      "ts": { "type": "string", "format": "date-time" },
+      "kind": {
+        "type": "string",
+        "enum": ["POLICY_APPROVED", "POLICY_BLOCKED", "SIGNER_CALLED", "SIGNER_BLOCKED", "CHAIN_TRANSFERRED", "GUARD_INTERNAL"],
+        "description": "CRITICAL: these three events are SEPARATE and must never be conflated: POLICY_APPROVED (guard allowed), SIGNER_CALLED (wallet sign invoked), CHAIN_TRANSFERRED (chain balance changed)"
+      },
+      "layer": { "type": "string", "description": "Guard layer that produced this event (L0-L8)" },
+      "decision": { "type": "string", "enum": ["ALLOW", "BLOCK"] },
+      "reason": { "type": "string", "description": "Reason code from reasons.ts" },
+      "detail": { "type": ["object", "string", "null"], "description": "Sanitized detail — MUST NOT contain private keys or signing secrets" },
+      "pin_hash": { "type": "string", "description": "sha256: prefixed hash of the pinned quote — never the raw quote" },
+      "policy_digest": { "type": "string", "description": "HMAC of the policy object" },
+      "trace_id": { "type": "string", "description": "Correlation ID across layers for one payment attempt" },
+      "amount_atomic": { "type": "string", "description": "Payment amount in atomic USDC units (6 decimals). Never a USD float." },
+      "merchant": { "type": "string", "description": "Merchant host or origin — never full URL with credentials" },
+      "attack": { "type": "string", "description": "Attack ID if from Red team (A1-A18)" },
+      "target": { "type": "string", "description": "Target guard version (naive / blue-v0 / blue-v1)" },
+      "chain_delta_atomic": { "type": "string", "description": "Actual balance delta from mock chain (negative = paid out). Set by L7 only." },
+      "funds_lost_atomic": { "type": "string", "description": "Funds lost to attacker per chain. Set by mock chain, NOT by the guard." }
+    }
+  },
+  "endpoints": {
+    "collector": {
+      "POST /events": "Submit a guard event",
+      "GET /events": "SSE stream of all events",
+      "GET /health": "Health check"
+    },
+    "blue_guard": {
+      "GET /health": "Guard health + budget summary",
+      "GET /guard/status": "Budget, behaviour stats, pin store size",
+      "GET /policy": "Active policy + digest"
+    },
+    "mock_chain": {
+      "GET /health": "Chain health",
+      "GET /balances": "All balances (read-only for everyone)",
+      "POST /settle": "EIP-3009 TransferWithAuthorization settlement",
+      "GET /balance-delta": "Balance delta for a given intentId"
+    }
+  },
+  "security_notes": [
+    "Private keys MUST NEVER appear in event payloads, logs, HTTP responses, or source code.",
+    "funds_lost_atomic is set by the mock chain ONLY — never by the guard's own logs.",
+    "POLICY_APPROVED ≠ SIGNER_CALLED ≠ CHAIN_TRANSFERRED. Track separately.",
+    "All amounts are atomic integer strings (BigInt-safe). No USD floats in event data."
+  ]
+}

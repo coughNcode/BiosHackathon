@@ -1,0 +1,72 @@
+/**
+ * Shared reason codes for every guard layer decision.
+ * ALL block/allow events use these constants — never raw strings.
+ *
+ * Prefixes:
+ *   L0_* = Transport layer
+ *   L1_* = Parse layer
+ *   L2_* = Identity/registry layer
+ *   L3_* = Price layer
+ *   L4_* = Pin & wallet layer
+ *   L5_* = Budget layer
+ *   L6_* = Behaviour layer
+ *   L7_* = Reconciler layer
+ *   L8_* = Decision log (never blocks)
+ *   GUARD_* = Internal guard errors
+ */
+
+export const REASON = {
+  // L0 Transport
+  L0_REDIRECT_HOST: "L0_REDIRECT_HOST",
+  L0_ORIGIN_NOT_ALLOWED: "L0_ORIGIN_NOT_ALLOWED",
+  L0_USERINFO_IN_URL: "L0_USERINFO_IN_URL",
+  L0_HTTP_DOWNGRADE: "L0_HTTP_DOWNGRADE",
+
+  // L1 Parse
+  L1_PARSE_REJECT: "L1_PARSE_REJECT",
+  L1_BODY_TOO_LARGE: "L1_BODY_TOO_LARGE",
+  L1_UNKNOWN_VERSION: "L1_UNKNOWN_VERSION",
+  L1_UNKNOWN_SCHEME: "L1_UNKNOWN_SCHEME",
+  L1_INVALID_AMOUNT: "L1_INVALID_AMOUNT",
+  L1_TOO_MANY_OPTIONS: "L1_TOO_MANY_OPTIONS",
+
+  // L2 Identity / Registry
+  L2_ENDPOINT_UNKNOWN: "L2_ENDPOINT_UNKNOWN",
+  L2_PAYTO_MISMATCH: "L2_PAYTO_MISMATCH",
+  L2_ASSET_NOT_ALLOWED: "L2_ASSET_NOT_ALLOWED",
+  L2_NETWORK_NOT_ALLOWED: "L2_NETWORK_NOT_ALLOWED",
+  L2_CHAIN_ID_MISMATCH: "L2_CHAIN_ID_MISMATCH",
+
+  // L3 Price
+  L3_PRICE_OUT_OF_BAND: "L3_PRICE_OUT_OF_BAND",
+  L3_PRICE_RISE: "L3_PRICE_RISE",
+  L3_APPROVAL_REQUIRED: "L3_APPROVAL_REQUIRED",
+  L3_APPROVAL_TOKEN_INVALID: "L3_APPROVAL_TOKEN_INVALID",
+
+  // L4 Pin & Signer
+  L4_QUOTE_CHANGED: "L4_QUOTE_CHANGED",
+  L4_WINDOW_TOO_LONG: "L4_WINDOW_TOO_LONG",
+  L4_PIN_CONSUMED: "L4_PIN_CONSUMED",
+  L4_SIGN_UNPINNED: "L4_SIGN_UNPINNED",
+  L4_SIGN_FORBIDDEN: "L4_SIGN_FORBIDDEN",
+
+  // L5 Budget
+  L5_BUDGET_RESERVED: "L5_BUDGET_RESERVED",
+  L5_BUDGET_EXHAUSTED: "L5_BUDGET_EXHAUSTED",
+  L5_DUPLICATE_INTENT: "L5_DUPLICATE_INTENT",
+
+  // L6 Behaviour
+  L6_LOOP_DETECTED: "L6_LOOP_DETECTED",
+  L6_VELOCITY: "L6_VELOCITY",
+
+  // L7 Post-payment
+  L7_SETTLEMENT_MISMATCH: "L7_SETTLEMENT_MISMATCH",
+
+  // Guard internal
+  GUARD_ERROR: "GUARD_ERROR",
+
+  // Allow
+  ALLOW: "ALLOW",
+} as const;
+
+export type ReasonCode = (typeof REASON)[keyof typeof REASON];
