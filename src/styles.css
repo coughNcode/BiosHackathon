@@ -1,0 +1,212 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-panel: var(--panel);
+  --color-card: var(--card);
+  --color-card-foreground: var(--foreground);
+  --color-popover: var(--card);
+  --color-popover-foreground: var(--foreground);
+  --color-primary: var(--accent);
+  --color-primary-foreground: var(--background);
+  --color-secondary: var(--panel);
+  --color-secondary-foreground: var(--foreground);
+  --color-muted: var(--panel);
+  --color-muted-foreground: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--background);
+  --color-safe: var(--safe);
+  --color-danger: var(--danger);
+  --color-warn: var(--warn);
+  --color-ml: var(--ml);
+  --color-gold: var(--gold);
+  --color-destructive: var(--danger);
+  --color-destructive-foreground: var(--foreground);
+  --color-border: var(--border);
+  --color-input: var(--border);
+  --color-ring: var(--accent);
+}
+
+:root {
+  --radius: 0.5rem;
+  --background: oklch(0.13 0.008 270);
+  --panel: oklch(0.165 0.012 270);
+  --card: oklch(0.19 0.016 265);
+  --border: oklch(0.27 0.03 265);
+  --foreground: oklch(0.91 0.018 265);
+  --muted: oklch(0.52 0.05 265);
+  --accent: oklch(0.77 0.15 225);
+  --grid-line: oklch(0.255 0.03 262); /* #1e2535 */
+  --safe: oklch(0.88 0.22 155);
+  --danger: oklch(0.65 0.24 10);
+  --warn: oklch(0.82 0.14 65);
+  --ml: oklch(0.67 0.22 310);
+  --gold: oklch(0.887 0.182 95.3); /* #ffd700 */
+  --terminal: oklch(0.13 0.01 250);
+  --glow: 0 0 18px color-mix(in oklab, var(--accent) 8%, transparent);
+  --gradient-ml: linear-gradient(135deg, var(--ml), color-mix(in oklab, var(--ml) 50%, var(--accent)));
+  --gauge: linear-gradient(90deg, var(--safe), var(--warn) 60%, var(--danger));
+  --cursor-default: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAAgUlEQVR4nN2USw7AIAhE1fRQvf/KW9ktUZDhY2L61g2PGVNK+Rd9jOyRjZUkiioroLx1/cbAmoATBhLpgqCIj48MAqvDE3BLAIvIW1jrEBL5E8wIifIEVETYP5SlJqGiBx4ADpzxVWT4u/eC4JnQBQlSXXD82AU5LsBxnuyLEtzKB/6cMVOGKZMyAAAAAElFTkSuQmCC") 3 2, default;
+  --cursor-pointer: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAYAAAByDd+UAAAAqklEQVR4nO2WQQ6AIAwEi/FR/v/Er/CiCSEtnfZgNLJHLLutbAsiWdTWpLYW3balBZNYgt8XLOEdmjOPgnm4IGkBIMx+Ke03EOdXOJJoVZCYC/MKKdG4PqmUu7QnvcdaTwyNYwtaZGP2NM4V9JIg6wr2zMTHULhfNGkiZ2N9V4xkV0hJAmIiXuMHGprGzs+QNnQgMTa8I052BgBzKb1+QNzj92Ee65n4W8ETrD5kJnjohIwAAAAASUVORK5CYII=") 14 14, pointer;
+}
+
+/* Light theme: html.light overrides the dark defaults. */
+html.light {
+  --background: oklch(0.975 0.006 250);
+  --panel: oklch(0.995 0.002 250);
+  --card: oklch(1 0 0);
+  --border: oklch(0.88 0.015 255);
+  --foreground: oklch(0.22 0.03 265);
+  --muted: oklch(0.5 0.03 260);
+  --accent: oklch(0.55 0.15 235);
+  --grid-line: oklch(0.8 0.03 250);
+  --safe: oklch(0.55 0.16 155);
+  --danger: oklch(0.57 0.23 15);
+  --warn: oklch(0.62 0.15 60);
+  --ml: oklch(0.52 0.22 310);
+  --gold: oklch(0.68 0.15 85);
+  --terminal: oklch(0.965 0.008 250);
+  --glow: 0 4px 18px color-mix(in oklab, var(--accent) 15%, transparent);
+  --cursor-default: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAAiElEQVR4nN2UOw7AIAxD6eeenXuizj1o1a4RJMT5IKF6Q0J+sREp5VfazvvN9lw5SCZo4QD0/FxHc8eiJgEHjCRSAVEQGx8xQquDE3BDIIOIU1jrkBK5E9SSEqUBKIieuw9lqUmqaEcNUMNaroosv7sLiK4JFZABVQHDl11UwwGwvCt7ngTT6gNmpjSDakxCDAAAAABJRU5ErkJggg==") 3 2, default;
+  --cursor-pointer: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAYAAAByDd+UAAAArklEQVR4nO2WsQ6AIAxEUfxPZ7/ImQ81OJEQUuhrB6ORG6HctXIthuBEPFKOR8rWc6tX0Isp+H3BxXpAcuZ17pgHB5IWIMLok9J+I3FqRi2JVAWJKRhWSIna9VGl2KU1aRlrNTE1TlewR9ZmT+NUQS0Jsi5h80x8Con7PZPGcje9fclI3QopiUUsBKXxLQ1NY4d3SBvakhhqVouTtQGAXEqnCIl7/D10Y/4m/lfwBt1udpzhNBSBAAAAAElFTkSuQmCC") 14 14, pointer;
+}
+
+@layer base {
+  * { border-color: var(--color-border); }
+  html { color-scheme: dark; }
+  html.light { color-scheme: light; }
+  html, body { cursor: var(--cursor-default); }
+  a, button, [role="button"], label, select, summary, input[type="checkbox"], .recharts-bar-rectangle, .recharts-dot { cursor: var(--cursor-pointer); }
+  button:disabled { cursor: not-allowed; }
+  input[type="text"], input:not([type]), textarea { cursor: text; }
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    background-image: repeating-linear-gradient(
+      0deg,
+      color-mix(in oklab, var(--foreground) 3%, transparent) 0 1px,
+      transparent 1px 2px
+    );
+  }
+}
+
+@utility card-cyber {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: box-shadow 200ms;
+  &:hover { box-shadow: var(--glow); }
+}
+@utility bg-gradient-ml { background-image: var(--gradient-ml); }
+@utility bg-gauge { background-image: var(--gauge); }
+
+@keyframes pulse-dot { 0%,100% { box-shadow: 0 0 0 0 currentColor; opacity: 1 } 50% { box-shadow: 0 0 0 4px transparent; opacity: .55 } }
+@keyframes blink { 0%,49% { opacity: 1 } 50%,100% { opacity: .25 } }
+@keyframes slide-in { from { transform: translateX(24px); opacity: 0 } to { transform: none; opacity: 1 } }
+@keyframes flash-red { 0% { box-shadow: 0 0 0 2px var(--danger) } 100% { box-shadow: none } }
+@keyframes tier-bounce { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-6px) } }
+@utility animate-pulse-dot { animation: pulse-dot 1.6s ease-in-out infinite; }
+@utility animate-blink { animation: blink 1.2s steps(1) infinite; }
+@utility animate-slide-in { animation: slide-in 200ms ease-in both; }
+@utility animate-flash-red { animation: flash-red 150ms ease-out; }
+@utility animate-tier { animation: tier-bounce 1s ease-in-out infinite; }
+
+/* --- cyberpunk depth --- */
+@keyframes grid-drift { from { background-position: 0 0 } to { background-position: 0 -40px } }
+@utility cyber-grid {
+  position: relative;
+  isolation: isolate;
+  &::before {
+    content: "";
+    position: fixed;
+    inset: 3.5rem 0 0 220px;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.08;
+    background-image:
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size: 40px 40px;
+    animation: grid-drift 30s linear infinite;
+  }
+}
+@utility neon-text { text-shadow: 0 0 14px color-mix(in oklab, var(--accent) 70%, transparent); }
+@utility danger-stripes {
+  background-image: repeating-linear-gradient(45deg, color-mix(in oklab, var(--danger) 4%, transparent) 0 10px, transparent 10px 20px);
+}
+@keyframes red-glow { 0%,100% { box-shadow: 0 0 10px color-mix(in oklab, var(--danger) 25%, transparent) } 50% { box-shadow: 0 0 34px color-mix(in oklab, var(--danger) 55%, transparent) } }
+@utility glow-danger { animation: red-glow 1.4s ease-in-out infinite; }
+@utility glow-safe { box-shadow: 0 0 26px color-mix(in oklab, var(--safe) 22%, transparent); }
+@keyframes type-reveal { from { width: 0 } }
+@utility typewriter {
+  display: inline-block;
+  vertical-align: bottom;
+  overflow: hidden;
+  white-space: nowrap;
+  width: calc(var(--n) * 1ch);
+  animation: type-reveal calc(var(--n) * 30ms) steps(var(--n), end) both;
+}
+@keyframes ring-out { from { transform: scale(1); opacity: .8 } to { transform: scale(1.5); opacity: 0 } }
+@utility live-ring {
+  position: absolute;
+  inset: -3px;
+  border-radius: 9999px;
+  border: 1px solid var(--safe);
+  animation: ring-out 1.5s ease-out infinite;
+}
+@utility nav-streak {
+  position: relative;
+  &::before {
+    content: "";
+    position: absolute;
+    left: -2px;
+    top: 20%;
+    height: 60%;
+    width: 2px;
+    background: linear-gradient(to bottom, var(--accent), transparent);
+    box-shadow: 0 0 8px var(--accent);
+  }
+}
+
+/* --- red/blue lab --- */
+@utility terminal { background: var(--terminal); box-shadow: inset 0 0 24px color-mix(in oklab, var(--foreground) 12%, transparent); }
+@utility packet {
+  position: absolute; top: 50%; left: 8%; width: 10px; height: 10px; margin-top: -5px; border-radius: 9999px;
+  background: var(--accent); box-shadow: 0 0 10px var(--accent);
+}
+@keyframes packet-fly { from { left: 8% } to { left: calc(50% - 22px) } }
+@keyframes packet-shatter { from { left: calc(50% - 22px); transform: scale(1.4); opacity: 1 } to { left: calc(50% - 22px); transform: scale(0); opacity: 0 } }
+@keyframes packet-pass { from { left: calc(50% - 22px); opacity: 1 } to { left: 92%; opacity: 0 } }
+@keyframes shield-red { 0%,100% { color: var(--accent); filter: none } 30% { color: var(--danger); filter: drop-shadow(0 0 10px var(--danger)) } }
+@keyframes shield-amber { 0%,100% { color: var(--accent); filter: none } 30% { color: var(--warn); filter: drop-shadow(0 0 10px var(--warn)) } }
+@keyframes tier-pop { 0% { transform: scale(0); opacity: 0 } 60% { transform: scale(1.3); opacity: 1 } 80% { transform: scale(.9) } 100% { transform: scale(1) } }
+@keyframes row-in { from { transform: translateX(-24px); opacity: 0 } to { transform: none; opacity: 1 } }
+@utility animate-packet-fly { animation: packet-fly 400ms ease-in forwards; }
+@utility animate-packet-shatter { animation: packet-shatter 150ms ease-out forwards; }
+@utility animate-packet-pass { animation: packet-pass 400ms ease-out forwards; }
+@utility animate-shield-red { animation: shield-red 450ms ease-out; }
+@utility animate-shield-amber { animation: shield-amber 450ms ease-out; }
+@utility animate-tier-pop { animation: tier-pop 600ms cubic-bezier(.34,1.56,.64,1) both; }
+@utility animate-row-in { animation: row-in 250ms ease-out both; }
+
+/* --- demo mode --- */
+@utility demo-bar {
+  background: color-mix(in oklab, var(--terminal) 85%, transparent);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 -8px 30px color-mix(in oklab, var(--foreground) 20%, transparent);
+}
+@keyframes slide-up { from { transform: translateY(100%) } to { transform: none } }
+@utility animate-slide-up { animation: slide-up 250ms ease-out both; }
+@media print { .demo-bar { display: none } }
