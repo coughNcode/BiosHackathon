@@ -1,0 +1,20 @@
+{
+  "providers": [
+    {
+      "domain": "demo.payguard-merchant.local",
+      "payTo": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+      "network": "base-sepolia",
+      "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+      "maxAmountUsd": 0.10,
+      "_note": "DEMO FIXTURE — test-only address"
+    },
+    {
+      "domain": "api.payguard-demo-service.local",
+      "payTo": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
+      "network": "base-sepolia",
+      "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+      "maxAmountUsd": 0.05,
+      "_note": "DEMO FIXTURE — test-only address"
+    }
+  ]
+}

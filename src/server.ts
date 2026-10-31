@@ -148,3 +148,8 @@ app.listen(port, () => {
   for (const [route, price] of Object.entries(PRICES)) console.log(`  ${route}  ${price}`);
   console.log("\nFree routes:\n  GET /ledger (X-Admin-Key)\n  POST /record-spend (X-Admin-Key)\n  GET /policy\n  POST /verify\n  GET /.well-known/x402\n  GET /health\n");
 });
+
+// Start Blue Agent firewall alongside existing daemon for unified dev experience
+import("./blue-agent.js").catch((err) => {
+  console.warn("[server] Blue Agent service note:", err?.message || err);
+});

@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { sign } from "./sign.js";
+import { getDatabase } from "./db/database.js";
 
 /**
  * PolicyEngine — the heart of x402-agent-wallet.
@@ -279,9 +280,68 @@ export class PolicyEngine {
   }
 
   private load(): void {
-    if (this.ephemeral || !existsSync(this.file)) return;
+    if (this.ephemeral) return;
+    try {
+      const db = getDatabase();
+      const rows = db.prepare(
+        "SELECT id, kind, merchant, amount_usd, resource, network, rail, verdict_id, reason, at FROM spend_entries ORDER BY at ASC",
+      ).all() as Array<{
+        id: string;
+        kind: string;
+        merchant: string;
+        amount_usd: number;
+        resource: string | null;
+        network: string | null;
+        rail: string | null;
+        verdict_id: string | null;
+        reason: string | null;
+        at: string;
+      }>;
+
+      if (rows && rows.length > 0) {
+        this.entries = rows.map((r) => ({
+          id: r.id,
+          kind: r.kind as "spend" | "approved-intent" | "denied-intent",
+          merchant: r.merchant,
+          amountUsd: r.amount_usd,
+          resource: r.resource ?? undefined,
+          network: r.network ?? undefined,
+          rail: (r.rail as "evm" | "solana") ?? undefined,
+          verdictId: r.verdict_id ?? undefined,
+          reason: r.reason ?? undefined,
+          at: r.at,
+        }));
+        return;
+      }
+    } catch {
+      // Fallback if db table not ready yet
+    }
+
+    if (!existsSync(this.file)) return;
     try {
       this.entries = JSON.parse(readFileSync(this.file, "utf8")) as SpendEntry[];
+      try {
+        const db = getDatabase();
+        const insert = db.prepare(
+          `INSERT OR IGNORE INTO spend_entries
+           (id, kind, merchant, amount_usd, resource, network, rail, verdict_id, reason, at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        );
+        for (const e of this.entries) {
+          insert.run(
+            e.id,
+            e.kind,
+            e.merchant,
+            e.amountUsd,
+            e.resource ?? null,
+            e.network ?? null,
+            e.rail ?? null,
+            e.verdictId ?? null,
+            e.reason ?? null,
+            e.at,
+          );
+        }
+      } catch {}
     } catch {
       this.entries = [];
     }
@@ -289,10 +349,37 @@ export class PolicyEngine {
 
   private save(): void {
     if (this.ephemeral) return;
-    mkdirSync(dirname(this.file), { recursive: true });
-    const tmp = `${this.file}.tmp`;
-    writeFileSync(tmp, JSON.stringify(this.entries, null, 2));
-    renameSync(tmp, this.file);
+    try {
+      const db = getDatabase();
+      const insert = db.prepare(
+        `INSERT OR REPLACE INTO spend_entries
+         (id, kind, merchant, amount_usd, resource, network, rail, verdict_id, reason, at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      );
+      for (const e of this.entries) {
+        insert.run(
+          e.id,
+          e.kind,
+          e.merchant,
+          e.amountUsd,
+          e.resource ?? null,
+          e.network ?? null,
+          e.rail ?? null,
+          e.verdictId ?? null,
+          e.reason ?? null,
+          e.at,
+        );
+      }
+    } catch (err) {
+      console.warn("[policy] SQLite spend_entries save error:", err);
+    }
+
+    try {
+      mkdirSync(dirname(this.file), { recursive: true });
+      const tmp = `${this.file}.tmp`;
+      writeFileSync(tmp, JSON.stringify(this.entries, null, 2));
+      renameSync(tmp, this.file);
+    } catch {}
   }
 }
 
