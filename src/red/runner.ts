@@ -101,13 +101,21 @@ async function runSimpleAttack(
   // Send to Blue /shield-check
   let blueResponse: BlueResponse;
   try {
+    await emitEvent({
+      source: "RED",
+      eventType: "ATTACK_SENT",
+      runId,
+      attackId,
+      data: { target: `${RED_CONFIG.blueUrl}/shield-check` },
+    });
+
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15000);
 
     const res = await fetch(`${RED_CONFIG.blueUrl}/shield-check`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ paymentRequirements: payload }),
+      body: JSON.stringify({ paymentRequirements: payload, runId, attackId }),
       signal: controller.signal,
     });
 
@@ -186,10 +194,18 @@ async function runTOCTOUAttack(
   // Step 1: Submit valid requirement for approval
   let approvalResponse: BlueResponse;
   try {
+    await emitEvent({
+      source: "RED",
+      eventType: "ATTACK_SENT",
+      runId,
+      attackId,
+      data: { stage: "step1_approval", target: `${RED_CONFIG.blueUrl}/shield-check` },
+    });
+
     const res = await fetch(`${RED_CONFIG.blueUrl}/shield-check`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ paymentRequirements: scenario.initialReq }),
+      body: JSON.stringify({ paymentRequirements: scenario.initialReq, runId, attackId }),
     });
     approvalResponse = (await res.json()) as BlueResponse;
   } catch (err) {
@@ -211,12 +227,22 @@ async function runTOCTOUAttack(
   // Step 2: Try to sign with the MUTATED payload + the valid intentToken
   let signingResponse: BlueResponse;
   try {
+    await emitEvent({
+      source: "RED",
+      eventType: "ATTACK_SENT",
+      runId,
+      attackId,
+      data: { stage: "step2_signing", target: `${RED_CONFIG.blueUrl}/agent/run` },
+    });
+
     const res = await fetch(`${RED_CONFIG.blueUrl}/agent/run`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         paymentRequirements: scenario.mutatedReq,
         intentToken,
+        runId,
+        attackId,
       }),
     });
     signingResponse = (await res.json()) as BlueResponse;
@@ -302,10 +328,18 @@ async function runBudgetExhaustAttack(
   for (let i = 0; i < scenario.maxAttempts; i++) {
     let response: BlueResponse;
     try {
+      await emitEvent({
+        source: "RED",
+        eventType: "ATTACK_SENT",
+        runId,
+        attackId,
+        data: { attempt: i + 1, target: `${RED_CONFIG.blueUrl}/shield-check` },
+      });
+
       const res = await fetch(`${RED_CONFIG.blueUrl}/shield-check`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ paymentRequirements: scenario.req }),
+        body: JSON.stringify({ paymentRequirements: scenario.req, runId, attackId }),
       });
       response = (await res.json()) as BlueResponse;
     } catch (err) {

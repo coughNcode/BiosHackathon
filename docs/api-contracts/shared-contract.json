@@ -1,5 +1,8 @@
-
 {
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "title": "PayGuard AI Shared Contract",
+  "description": "Unified system contract for Blue guard, Red attacker, mock chain, collector, and frontend dashboard.",
+  "version": "1.0.0",
   "services": {
     "blue_agent": {
       "port": 4010,
@@ -24,6 +27,10 @@
     "collector": {
       "port": 4050,
       "host_env": "DASHBOARD_HOST"
+    },
+    "legacy_server": {
+      "port": 4032,
+      "host_env": "PORT"
     },
     "frontend": {
       "port": 5173,
@@ -92,5 +99,92 @@
     "SECURITY_LAYER_FAILED",
     "FUZZER_CASE_CREATED",
     "ADAPTIVE_STRATEGY_SELECTED"
+  ],
+  "guard_event_schema": {
+    "type": "object",
+    "required": ["event_id", "ts", "kind", "layer", "decision", "reason", "trace_id"],
+    "properties": {
+      "event_id": { "type": "string", "description": "Unique event identifier" },
+      "ts": { "type": "string", "format": "date-time" },
+      "kind": {
+        "type": "string",
+        "enum": ["POLICY_APPROVED", "POLICY_BLOCKED", "SIGNER_CALLED", "SIGNER_BLOCKED", "CHAIN_TRANSFERRED", "GUARD_INTERNAL"],
+        "description": "CRITICAL: POLICY_APPROVED, SIGNER_CALLED, and CHAIN_TRANSFERRED are separate events"
+      },
+      "layer": { "type": "string", "description": "Guard layer that produced this event (L0-L8)" },
+      "decision": { "type": "string", "enum": ["ALLOW", "BLOCK"] },
+      "reason": { "type": "string", "description": "Reason code from reasons.ts" },
+      "detail": { "type": ["object", "string", "null"], "description": "Sanitized detail without secrets" },
+      "pin_hash": { "type": "string", "description": "sha256: prefixed hash of the pinned quote" },
+      "policy_digest": { "type": "string", "description": "HMAC of the policy object" },
+      "trace_id": { "type": "string", "description": "Correlation ID across layers for one payment attempt" },
+      "amount_atomic": { "type": "string", "description": "Payment amount in atomic units as integer string" },
+      "merchant": { "type": "string", "description": "Merchant host or origin" },
+      "attack": { "type": "string", "description": "Attack ID if from Red team (A1-A18)" },
+      "target": { "type": "string", "description": "Target guard version" },
+      "chain_delta_atomic": { "type": "string", "description": "Actual balance delta from mock chain" },
+      "funds_lost_atomic": { "type": "string", "description": "Funds lost per mock chain confirmation" }
+    }
+  },
+  "endpoints": {
+    "collector": {
+      "POST /events": "Submit a structured or guard event",
+      "GET /events": "SSE stream or paginated list of all events",
+      "GET /runs": "Correlated attack and payment runs",
+      "GET /metrics": "Live computed defense metrics and latency",
+      "GET /scorecard": "Per-attack defense scorecard",
+      "GET /health": "Collector health and event counts"
+    },
+    "blue_agent": {
+      "POST /shield-check": "Zero-trust 6-layer firewall validation of payment requirements",
+      "POST /agent/run": "Autonomous agent task execution with firewall protection",
+      "GET /audit": "Paginated security decisions audit log",
+      "GET /merchants": "List of trusted providers from registry",
+      "GET /metrics": "Blue agent firewall metrics",
+      "GET /health": "Blue agent service health"
+    },
+    "mock_chain": {
+      "GET /balances": "Read all account balances (read-only neutral ledger)",
+      "GET /balance/:address": "Read specific account balance",
+      "POST /transfer": "Execute token transfer on mock chain",
+      "POST /settle": "Simulate payment settlement",
+      "POST /reset": "Reset chain state to initial balances",
+      "GET /transactions": "List mock chain transactions",
+      "GET /health": "Mock chain service health"
+    },
+    "red_merchant": {
+      "GET /health": "Merchant service health",
+      "GET /catalog": "Merchant goods catalog",
+      "POST /checkout": "Initiate 402 payment challenge (supports normal and hostile modes)"
+    },
+    "red_facilitator": {
+      "GET /health": "Facilitator service health",
+      "POST /verify": "Verify signature and payment requirements",
+      "POST /settle": "Facilitator settlement submission to chain",
+      "GET /config": "Current facilitator operating mode",
+      "POST /config/mode": "Switch facilitator operating mode"
+    },
+    "red_console": {
+      "GET /health": "Red console health",
+      "GET /scenarios": "List all attack scenarios (A01-A10)",
+      "POST /attacks/run": "Execute single attack scenario against Blue",
+      "POST /attacks/run-all": "Execute full test matrix against Blue",
+      "GET /status": "Current status and adaptive UCB1 stats"
+    },
+    "legacy_server": {
+      "POST /policy-check": "Legacy policy check on port 4032",
+      "POST /record-spend": "Record settled spend against budget",
+      "GET /ledger": "Spend history ledger",
+      "GET /policy": "Current wallet policy",
+      "POST /verify": "Verify signed verdict",
+      "GET /health": "Legacy server health"
+    }
+  },
+  "security_notes": [
+    "Private keys, signing secrets, and mnemonic phrases MUST NEVER appear in event payloads, logs, HTTP responses, or source code.",
+    "funds_lost_atomic is confirmed by the mock chain ONLY — never inferred solely by guard approval.",
+    "CRITICAL SEPARATION: POLICY_APPROVED ≠ SIGNER_INVOKED ≠ FUNDS_TRANSFERRED. These three events are separate and must never be conflated.",
+    "All amounts are atomic integer strings (BigInt-safe). No USD floats in payment amounts or cryptographic payloads.",
+    "TOCTOU protection requires intent fingerprint verification at the actual signing boundary."
   ]
 }

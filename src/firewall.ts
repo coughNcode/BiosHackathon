@@ -91,41 +91,43 @@ export class WalletShieldFirewall {
   validateSync(
     req: Record<string, unknown>,
     runId?: string,
+    attackId?: string,
   ): ShieldCheckResult {
     const startMs = performance.now();
     const decisionId = `dec_${uuidv4()}`;
     const currentRunId = runId ?? `run_${uuidv4()}`;
+    const currentAttackId = attackId ?? (typeof req["attackId"] === "string" ? req["attackId"] : undefined);
 
     try {
       // CHECK 1: Schema + Expiry
       const check1 = this.checkSchemaAndExpiry(req);
       if (!check1.allowed) {
-        return this.finalize(check1, decisionId, startMs, req, currentRunId);
+        return this.finalize(check1, decisionId, startMs, req, currentRunId, currentAttackId);
       }
       const parsed = check1.parsed!;
 
       // CHECK 2: Recipient Identity Binding
       const check2 = this.checkRecipientIdentity(parsed);
       if (!check2.allowed) {
-        return this.finalize(check2, decisionId, startMs, req, currentRunId);
+        return this.finalize(check2, decisionId, startMs, req, currentRunId, currentAttackId);
       }
 
       // CHECK 3: Amount Guard (integer arithmetic)
       const check3 = this.checkAmountGuard(parsed);
       if (!check3.allowed) {
-        return this.finalize(check3, decisionId, startMs, req, currentRunId);
+        return this.finalize(check3, decisionId, startMs, req, currentRunId, currentAttackId);
       }
 
       // CHECK 4: Replay Protection
       const check4 = this.checkReplayProtection(parsed);
       if (!check4.allowed) {
-        return this.finalize(check4, decisionId, startMs, req, currentRunId);
+        return this.finalize(check4, decisionId, startMs, req, currentRunId, currentAttackId);
       }
 
       // CHECK 5: Budget Policy
       const check5 = this.checkBudgetPolicy(parsed);
       if (!check5.allowed) {
-        return this.finalize(check5, decisionId, startMs, req, currentRunId);
+        return this.finalize(check5, decisionId, startMs, req, currentRunId, currentAttackId);
       }
 
       // CHECK 6: Intent Fingerprint Lock
@@ -140,7 +142,7 @@ export class WalletShieldFirewall {
         intentToken,
       };
 
-      return this.finalize(result, decisionId, startMs, req, currentRunId);
+      return this.finalize(result, decisionId, startMs, req, currentRunId, currentAttackId);
     } catch (err) {
       const result: CheckResult = {
         allowed: false,
@@ -150,15 +152,16 @@ export class WalletShieldFirewall {
         evidence: { expected: "no error", received: String(err) },
         intentToken: null,
       };
-      return this.finalize(result, decisionId, startMs, req, currentRunId);
+      return this.finalize(result, decisionId, startMs, req, currentRunId, currentAttackId);
     }
   }
 
   async validate(
     req: Record<string, unknown>,
     runId?: string,
+    attackId?: string,
   ): Promise<ShieldCheckResult> {
-    return this.validateSync(req, runId);
+    return this.validateSync(req, runId, attackId);
   }
 
   /**
@@ -467,6 +470,7 @@ export class WalletShieldFirewall {
     startMs: number,
     req: Record<string, unknown>,
     runId: string,
+    attackId?: string,
   ): ShieldCheckResult {
     const latencyMs = Math.round(performance.now() - startMs);
     const decidedAt = new Date().toISOString();
@@ -525,7 +529,7 @@ export class WalletShieldFirewall {
           latencyMs,
         },
         runId,
-        result.attackType ? decisionId : null,
+        attackId ?? (result.attackType ? decisionId : null),
       ),
     ).catch(() => { /* collector failure is non-fatal */ });
 

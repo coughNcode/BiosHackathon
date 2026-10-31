@@ -129,8 +129,30 @@ app.use(express.static("public"));
 
 await mountSolanaCheckout(app);
 
-app.listen(port, () => {
-  console.log(`\nx402-agent-wallet daemon on http://localhost:${port}`);
+// ── Security startup warnings ─────────────────────────────────────────────────
+// [S1] Warn loudly if the signing secret is the hardcoded dev default.
+// Private key / secret MUST NOT be committed to source — use .env
+if (!process.env.SIGNING_SECRET) {
+  console.warn("[x402-agent-wallet] ⚠️  WARNING: SIGNING_SECRET not set — using insecure dev default.");
+  console.warn("[x402-agent-wallet]    Signed verdicts can be forged. Set SIGNING_SECRET in .env");
+}
+
+// [S2] Warn loudly if the admin key is the hardcoded dev default.
+if (!process.env.ADMIN_KEY) {
+  console.warn("[x402-agent-wallet] ⚠️  WARNING: ADMIN_KEY not set — using insecure dev default 'dev-admin-key'.");
+  console.warn("[x402-agent-wallet]    /record-spend and /ledger are unprotected. Set ADMIN_KEY in .env");
+}
+
+// ── Protocol version warning ──────────────────────────────────────────────────
+const x402Version = process.env.X402_VERSION ?? "1";
+if (x402Version !== "2") {
+  console.warn("[x402-agent-wallet] ℹ️  Running in x402 V1 mode (X-PAYMENT header).");
+  console.warn("[x402-agent-wallet]    Set X402_VERSION=2 to enable V2 headers (PAYMENT-SIGNATURE).");
+}
+
+// ── Bind to 0.0.0.0 explicitly for LAN access (Blue laptop requirement) ───────
+app.listen(port, "0.0.0.0", () => {
+  console.log(`\nx402-agent-wallet daemon on http://0.0.0.0:${port} (LAN accessible)`);
   console.log("\nPayment rails (client picks one):");
   for (const rail of activeRails()) {
     console.log(`  ${rail.rail.padEnd(7)} ${rail.network.padEnd(14)} USDC → ${rail.payTo}`);

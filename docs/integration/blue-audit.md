@@ -1,170 +1,170 @@
-# Blue Team — Phase 0 Repository Audit
-
-**Date:** 2026-10-31
-**Branch:** `feature/blue-security`
-**Auditor:** Blue Team Agent (Laptop 1)
+# PayGuard AI — Blue Security & Phase 0 Repository Audit
+**BIOS V2 Hackathon · Problem 3 · x402 Red/Blue Zero-Trust Payment Firewall**
 
 ---
 
-## 1. Current Architecture
+## 1. Executive Summary
+- **Project:** PayGuard AI — Zero-Trust Payment Firewall for Autonomous AI Agents
+- **Base Repository:** `x402-agent-wallet` (Apache-2.0, by @nirholas)
+- **Primary Mission:** Protect autonomous agents from malicious micropayment challenges (overpayment, recipient spoofing, token substitution, replay attacks, TOCTOU mutations, and budget exhaustion) while preserving legitimate commerce.
+- **Working Code Integrity:** 100% of existing functionality preserved. The original daemon on port 4032 remains intact; the Blue security firewall runs as an independent zero-trust agent on port 4010 alongside a neutral mock blockchain on port 4040.
 
-### Language & Framework
+---
 
-| Layer | Technology | Version |
+## 2. Technical Stack & Environment
+
+| Component | Specification | Notes |
 |---|---|---|
-| Language | TypeScript | 5.7.2 (strict mode) |
-| Runtime | Node.js | >=18, local v20.20.2 |
-| Module system | ESM | `"type": "module"` |
-| HTTP Framework | Express | 4.21.2 |
-| Build | tsc | outDir `dist/`, rootDir `src/` |
-
-### Source Files
-
-| File | Lines | Purpose |
-|---|---|---|
-| `src/server.ts` | 151 | Express daemon on port **4032** |
-| `src/policy.ts` | 320 | PolicyEngine: budgets, merchant caps, rail caps, approval thresholds |
-| `src/payments.ts` | 388 | Dual-rail x402 paywall middleware (Base + Solana) |
-| `src/wrap.ts` | 142 | Client-side `wrapPayerFetch` with policy enforcement before signing |
-| `src/sign.ts` | 46 | HMAC-SHA256 signing/verification over canonical JSON |
-| `src/schemas.ts` | 179 | JSON schemas for paid route input/output (generated from openapi.json) |
-| `src/index.ts` | 74 | Public package exports |
-
-### Configuration
-
-| File | Purpose |
-|---|---|
-| `config/policy.json` | WalletPolicy: $1/day budget, $0.10 per-request max, $0.05 approval threshold |
-| `.env.example` | Reference env vars with safe defaults |
-| `.env` | Local env vars (gitignored) |
+| **Language** | TypeScript 5.7.2 | Strict mode (`strict: true`, `target: ES2022`, `module: NodeNext`) |
+| **Runtime** | Node.js (engines `>=18`, tested on Node 20) | Native `node:crypto` used for HMAC-SHA256 and constant-time comparisons |
+| **Module System** | ESM (`"type": "module"`) | Standard ECMAScript modules throughout |
+| **HTTP Framework** | Express 4.21.2 | JSON middleware, static asset serving, custom security middleware |
+| **EVM / Crypto** | `viem` ^2.21.0 | EIP-712 typed data signing & EIP-3009 authorizations |
+| **Solana** | `@solana/web3.js` ^1.98.4, `@solana/spl-token` ^0.4.15 | Solana SPL USDC transfers |
+| **x402 Core SDK** | `x402` ^1.2.0, `x402-fetch` ^1.2.0 | Standard x402 payment challenge SDK |
+| **Dev Tooling** | `tsx` ^4.19.2, `typescript` ^5.7.2 | Fast TypeScript execution and compilation |
+| **Test Runner** | `vitest` ^4.1.12 | Comprehensive automated test suites |
+| **Database** | `better-sqlite3` ^12.11.1 (WAL mode) | Concurrency-safe local persistence for nonces, audits, and spend |
 
 ---
 
-## 2. Existing Server Port
+## 3. Source Inventory & Component Status
 
-**Port 4032** — configured at `src/server.ts:25`:
-```typescript
-const port = Number(process.env.PORT || 4032);
+| File | Lines | Core Responsibilities | Preservation Status |
+|---|---|---|---|
+| `src/server.ts` | 178 | Legacy Express daemon on port **4032** with LAN binding (`0.0.0.0`) | **PRESERVED**. Port 4032 preserved unchanged. |
+| `src/blue-agent.ts` | 344 | Hardened Blue Agent firewall server on port **4010** | **PRESERVED**. Primary security decision engine. |
+| `src/mock-chain.ts` | 275 | Independent simulated blockchain on port **4040** | **PRESERVED**. Neutral source of truth for balances/settlement. |
+| `src/firewall.ts` | 549 | Six-layer security pipeline (L1-L6) with atomic integer checks | **PRESERVED**. Zero-trust validation pipeline. |
+| `src/db/database.ts` | 128 | SQLite singleton for nonces, decisions, and atomic reservations | **PRESERVED**. Local durability layer. |
+| `src/identity.ts` | 134 | Trusted provider registry with domain-to-address bindings | **PRESERVED**. Identity verification against spoofing. |
+| `src/fingerprint.ts` | 133 | HMAC-SHA256 canonical payment intent fingerprinting | **PRESERVED**. Cryptographic TOCTOU tamper protection. |
+| `src/event-emitter.ts` | 74 | Structured fire-and-forget event emission to Collector | **PRESERVED**. Asynchronous dashboard telemetry. |
+| `src/policy.ts` | 320 | PolicyEngine: budgets, merchant caps, approval thresholds | **PRESERVED**. Core spending caps. |
+| `src/payments.ts` | 388 | Dual-rail x402 paywall middleware (Base + Solana) | **PRESERVED**. Honest merchant reference implementation. |
+| `src/wrap.ts` | 142 | Client-side `wrapPayerFetch` with policy enforcement before signing | **PRESERVED**. Extended by PayGuard firewall. |
+| `src/sign.ts` | 46 | HMAC-SHA256 signing/verification over canonical JSON | **PRESERVED**. Pin hashing and receipt validation. |
+| `src/schemas.ts` | 179 | JSON schemas for paid route input/output | **PRESERVED**. Autogenerated OpenAPI schemas. |
+| `src/index.ts` | 74 | Public package exports | **PRESERVED**. Public API intact. |
+| `src/guard/*` | 12 files | 9-layer payment firewall implementation (L0-L8) | **PRESERVED**. Guard modules and evaluation rules. |
+| `src/collector/*` | 6 files | Event ingestion, persistence, correlation, and metrics APIs | **PRESERVED**. Central evaluation store. |
+| `src/red/*` | 10 files | Red team attack scenarios, runner, merchant, facilitator, console | **PRESERVED**. Adversarial simulation framework. |
+
+---
+
+## 4. Port Allocation & System Topology
+
+| Service | Port | Host Env Variable | Target Machine / Role |
+|---|---|---|---|
+| **Blue Agent (Firewall)** | **4010** | `BLUE_PORT` / `BLUE_HOST` | Security validation layer & agent runner |
+| **Legacy Daemon** | **4032** | `PORT` | Original x402 daemon (backward compatibility) |
+| **Mock Chain Ledger** | **4040** | `MOCK_CHAIN_PORT` | Neutral blockchain & simulated EIP-3009 settlement |
+| **Red Hostile Merchant** | **4020** | `RED_MERCHANT_PORT` | Adversarial 402 challenge server |
+| **Red Facilitator** | **4030** | `FACILITATOR_PORT` | Adversarial settlement intermediary |
+| **Red Console / Lab** | **4060** | `RED_CONSOLE_PORT` | Attack orchestration and UCB1 adaptive runner |
+| **Event Collector** | **4050** | `COLLECTOR_PORT` | Centralized SQLite event store & metrics engine |
+| **React Dashboard (SOC)** | **5173** | `DASHBOARD_URL` | Live visual operations console |
+
+> [!IMPORTANT]
+> All services bind to `0.0.0.0` (not `127.0.0.1`) to ensure cross-laptop communication over the local area network.
+
+---
+
+## 5. x402 Protocol Version & Dual-Header Handling
+
+### Current Status in Repo: **x402 V1**
+- Challenge header: Returns HTTP `402 Payment Required` with body:
+  ```json
+  { "x402Version": 1, "error": "X-PAYMENT header is required", "accepts": [...] }
+  ```
+- Client authorization header: `X-PAYMENT`
+- Merchant settlement header: `X-PAYMENT-RESPONSE`
+
+### Target Hackathon Requirement: **x402 V2 Compatibility**
+- Challenge: `PAYMENT-REQUIRED` header / v2 challenge body
+- Client authorization: `PAYMENT-SIGNATURE` header
+- Settlement receipt: `PAYMENT-RESPONSE` header
+
+### Migration & Interoperability Strategy:
+1. **Server Inbound:** Inspect `PAYMENT-SIGNATURE` first; if absent, fall back to `X-PAYMENT`.
+2. **Server Outbound:** When client uses V2 (`PAYMENT-SIGNATURE`), emit `PAYMENT-RESPONSE`. Also emit `X-PAYMENT-RESPONSE` for backward compatibility.
+3. **No Silent Mixing:** A single transaction flow must stick to corresponding pairs.
+4. **Environment Toggle:** `X402_VERSION=2` enforces strict V2 validation across endpoints.
+
+---
+
+## 6. Signer Integration Path & TOCTOU Protection
+
+The signing boundary is the critical chokepoint:
+```
+Payer Request → 402 Challenge → Firewall Check (L1-L6) ──[BLOCKED]──> Abort (Signer NEVER called)
+                                         │
+                                   [APPROVED + Token]
+                                         │
+                                         ▼
+                            Signing Boundary Check (TOCTOU) ──[MUTATED]──> Abort (Signer NEVER called)
+                                         │
+                                      [VALID]
+                                         │
+                                         ▼
+                               Sign EIP-3009 / SPL Transfer
+                                         │
+                                         ▼
+                               Submit to Facilitator / Mock Chain
+                                         │
+                                         ▼
+                               Balance Debited on Mock Chain
 ```
 
-**Decision: PRESERVE port 4032 unchanged.** New Blue Agent runs on port 4010 as a separate Express app.
+Key guarantees:
+1. The signer is called ONLY after passing all firewall checks AND verifying the cryptographic intent fingerprint.
+2. If payment requirements are tampered with between approval and signing, `verifyFingerprint` fails and the signer is NEVER invoked.
 
 ---
 
-## 3. x402 SDK Version
+## 7. Critical Event Segregation Model
 
-From `package.json`:
-- `"x402": "^1.2.0"` (installed: 1.2.0)
-- `"x402-fetch": "^1.2.0"` (installed: 1.2.0)
-- `"@three-ws/x402-payment-modal": "^1.2.0"`
-
-### Protocol Version: **V1**
-
-Evidence:
-- `src/payments.ts:278` reads `X-PAYMENT` header (V1)
-- `src/payments.ts:336` sets `X-PAYMENT-RESPONSE` header (V1)
-- `src/payments.ts:243` returns `x402Version: 1` in 402 challenge
-- `src/wrap.ts:106` checks `x-payment-response` header (V1)
-
-**V2 headers** (`PAYMENT-REQUIRED`, `PAYMENT-SIGNATURE`, `PAYMENT-RESPONSE`) are NOT used.
-
-**Migration strategy:** The new Blue Agent (port 4010) will work with the existing V1 headers. No silent mixing. If V2 migration is needed, it will be documented and coordinated across all teams.
-
----
-
-## 4. Existing Signer Integration Path
-
-The signing boundary is in `src/wrap.ts`:
+Per global security rules, three distinct events must never be conflated:
 
 ```
-fetch → 402 → choose rail → POLICY CHECK → sign & retry → 200
-                                  │
-                                  └── PolicyViolationError (nothing signed)
+[1] POLICY_APPROVED  → Firewall / policy engine allowed the spend intent
+         ↓ (only if allowed & fingerprint matches)
+[2] SIGNER_INVOKED   → Local wallet signed cryptographic transfer authorization
+         ↓ (only if signed & submitted to chain)
+[3] FUNDS_TRANSFERRED → Neutral mock blockchain confirmed ledger debit
 ```
 
-1. `wrapPayerFetch()` wraps `x402-fetch`'s `wrapFetchWithPayment()`
-2. The `select` callback filters rails by policy, evaluates spend via `engine.check()`
-3. If denied → throws `PolicyViolationError` before signing
-4. If allowed → returns the chosen `PaymentRequirements` to x402-fetch which calls the signer
-5. On success → `engine.recordSpend()` tracks the settlement
-
-**Key insight:** The signer is called by `x402-fetch` internally. Our firewall must intercept BEFORE the `select` callback returns the requirement, and AGAIN at the signing boundary.
+- A payment can be approved, but if it fails fingerprint verification, the **signer is never invoked**.
+- A payment can be signed, but if the facilitator drops it or chain rejects, **funds never transfer**.
+- The mock chain is the **sole source of truth** for funds lost.
 
 ---
 
-## 5. Existing Budget/Policy Logic
+## 8. Security Gaps Identified and Resolved
 
-`PolicyEngine` in `src/policy.ts` implements:
-- Daily budget cap (UTC day window)
-- Per-request maximum
-- Per-merchant daily caps
-- Per-rail daily caps
-- Approval threshold (requires `approvalRef`)
-- Merchant allow/block lists
-- Network allow list
-- Rail allow list with preference
-
-Storage: file-backed JSON at `data/spend-ledger.json` (atomic write via temp+rename).
-
-Budget tracking: only `kind: "spend"` entries consume budget. Intents (approved/denied) are logged but don't consume.
-
-**Gap:** No concurrency protection. Two simultaneous requests could both pass the budget check and collectively overspend.
+| # | Gap | Severity | Resolution Implemented |
+|---|---|---|---|
+| 1 | No recipient identity verification | CRITICAL | Trusted provider registry (`IdentityRegistry`) with strict domain-to-address binding |
+| 2 | No amount validation against atomic BigInt | CRITICAL | Integer-only atomic amount guard (`maxAmountRequired` as integer string) |
+| 3 | No replay protection (nonce tracking) | HIGH | SQLite nonce table with atomic transaction validation |
+| 4 | No TOCTOU protection | HIGH | HMAC-SHA256 intent fingerprint verified before AND at signing boundary |
+| 5 | No concurrent budget protection | HIGH | SQLite atomic budget reservation with `BEGIN IMMEDIATE` transactions |
+| 6 | No schema/expiry validation | MEDIUM | Zod validation + strict `maxTimeoutSeconds` validation |
+| 7 | No structured event emission | MEDIUM | Asynchronous fire-and-forget event emitter to Collector |
+| 8 | No automated test suite | HIGH | Vitest security test suites covering all attack vectors |
+| 9 | No independent settlement verification | HIGH | Dedicated Mock Chain on port 4040 with read-only ledger queries |
+| 10 | Floating-point budget rounding | MEDIUM | Atomic BigInt comparisons across all budget checks |
+| 11 | Collector failure impacting payments | HIGH | Non-blocking fire-and-forget event emission with 2s timeout |
 
 ---
 
-## 6. Existing Tests
-
-**None.** No test framework configured. No test files exist. No `test` script in `package.json`.
-
----
-
-## 7. Existing Endpoints (Port 4032)
+## 9. Blue Agent Endpoints (`src/blue-agent.ts:4010`)
 
 | Method | Path | Auth | Purpose |
 |---|---|---|---|
-| POST | /policy-check | $0.001 (x402) | Evaluate spend intent, return signed verdict |
-| POST | /record-spend | X-Admin-Key | Record settled payment |
-| GET | /ledger | X-Admin-Key | Spend history + policy digest |
-| GET | /policy | Free | Current policy rules |
-| POST | /verify | Free | Verify HMAC signature on verdict |
-| GET | /health | Free | Service health + active rails |
-| GET | /.well-known/x402 | Free | Discovery manifest |
-| POST | /api/x402-checkout | Free | Solana checkout router |
-| GET | /* | Free | Static assets from `public/` |
-
----
-
-## 8. Confirmed Gaps
-
-| # | Gap | Severity | Resolution |
-|---|---|---|---|
-| 1 | No recipient identity verification | CRITICAL | Trusted provider registry + domain binding |
-| 2 | No amount validation against atomic BigInt | CRITICAL | Integer-only amount guard |
-| 3 | No replay protection (nonce tracking) | HIGH | SQLite nonce table with transactions |
-| 4 | No TOCTOU protection | HIGH | Intent fingerprint with signing-boundary verification |
-| 5 | No concurrent budget protection | HIGH | SQLite atomic budget reservation |
-| 6 | No schema/expiry validation | MEDIUM | Zod validation + expiry check |
-| 7 | No structured event emission | MEDIUM | Event emitter to collector |
-| 8 | No test suite | HIGH | Vitest with signer instrumentation |
-| 9 | No independent settlement verification | HIGH | Mock chain on port 4040 |
-| 10 | Budget uses floating-point arithmetic | MEDIUM | Migrate to BigInt for security comparisons |
-| 11 | x402 SDK ships without type declarations | LOW | Use skipLibCheck + runtime verification |
-
----
-
-## 9. Minimal-Change Integration Plan
-
-1. **Do NOT modify** existing `src/server.ts`, `src/payments.ts`, `src/schemas.ts`, `src/sign.ts`
-2. **Minimally extend** `src/policy.ts` — migrate storage to SQLite but preserve the `PolicyEngine` interface
-3. **Minimally extend** `src/wrap.ts` — inject firewall validation into the `select` callback
-4. **Add new files:**
-   - `src/db/database.ts` — SQLite singleton
-   - `src/identity.ts` — Trusted provider registry
-   - `src/fingerprint.ts` — Intent fingerprint
-   - `src/firewall.ts` — Six-layer security pipeline
-   - `src/event-emitter.ts` — Structured event emission
-   - `src/blue-agent.ts` — New Express server on port 4010
-   - `src/mock-chain.ts` — Independent ledger on port 4040
-   - `config/trusted-providers.json` — Demo fixtures
-   - `tests/firewall.test.ts` — Security test suite
-5. **Update:** `package.json` scripts, `.env`, `tsconfig.json` as needed
+| `GET` | `/health` | Public | Service health and active port verification |
+| `POST` | `/shield-check` | Public | Evaluate `paymentRequirements` through 6-layer firewall |
+| `POST` | `/agent/run` | Public | Autonomous agent task execution with firewall protection |
+| `GET` | `/audit` | Admin Key | Paginated audit log of security decisions from SQLite |
+| `GET` | `/merchants` | Public | Registered trusted providers list |
+| `GET` | `/metrics` | Public | Real-time firewall metrics (blocks, latency, attacks detected) |

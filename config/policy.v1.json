@@ -1,0 +1,30 @@
+{
+  "$comment": "Blue v1 endpoint registry. Replace placeholder values with actual demo addresses before the event.",
+  "version": 1,
+  "rails": ["evm"],
+  "caps": {
+    "dailyAtomic": "1000000",
+    "perCallAtomic": "100000",
+    "approvalAtomic": "50000",
+    "velocityPerMin": 20
+  },
+  "endpoints": [
+    {
+      "$comment": "Replace RED_IP with the actual Red laptop LAN IP (set RED_URL env var)",
+      "origin": "http://localhost:4020",
+      "method": "GET",
+      "path": "/paid/report",
+      "payTo": "0x0000000000000000000000000000000000000000",
+      "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+      "chainId": 84532,
+      "assetName": "USD Coin",
+      "assetVersion": "2",
+      "price": {
+        "minAtomic": "1000",
+        "maxAtomic": "10000"
+      },
+      "maxWindowSeconds": 30
+    }
+  ]
+}
+

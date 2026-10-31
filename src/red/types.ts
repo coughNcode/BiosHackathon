@@ -122,6 +122,7 @@ export interface RedEvent {
   source: "RED";
   eventType:
     | "ATTACK_STARTED"
+    | "ATTACK_SENT"
     | "ATTACK_COMPLETED"
     | "ATTACK_ERROR"
     | "FACILITATOR_MODE_CHANGED"

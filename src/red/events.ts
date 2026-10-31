@@ -12,9 +12,10 @@ import type { RedEvent } from "./types.js";
  * Emit a Red event to the collector. Fire-and-forget: collector outage
  * must never affect attack execution.
  */
-export async function emitEvent(event: Omit<RedEvent, "timestamp">): Promise<void> {
-  const payload: RedEvent = {
+export async function emitEvent(event: Omit<RedEvent, "timestamp"> & { message?: string }): Promise<void> {
+  const payload = {
     ...event,
+    message: event.message ?? `Red ${event.eventType}${event.attackId ? ` (${event.attackId})` : ""}`,
     timestamp: new Date().toISOString(),
   };
 

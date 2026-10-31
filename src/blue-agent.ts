@@ -105,7 +105,7 @@ app.post("/shield-check", async (req, res) => {
       return;
     }
 
-    const result = await firewall.validate(paymentRequirements, req.body?.runId);
+    const result = await firewall.validate(paymentRequirements, req.body?.runId, req.body?.attackId);
     res.json(result);
   } catch (err) {
     res.status(500).json({
