@@ -70,3 +70,4 @@ export const REASON = {
 } as const;
 
 export type ReasonCode = (typeof REASON)[keyof typeof REASON];
+

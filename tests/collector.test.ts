@@ -396,3 +396,4 @@ describe("PayGuard AI Event Collector Integration Tests", () => {
     expect(untrustedRes.status).toBe(403);
   });
 });
+

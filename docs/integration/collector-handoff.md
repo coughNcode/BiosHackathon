@@ -166,3 +166,4 @@ All 13 integration tests pass deterministically:
 1. **Storage Concurrency:** SQLite in WAL mode safely supports concurrent reads and writes. If multi-process clustering is needed, use standard SQLite file locking.
 2. **Hotspot IP Changes:** Before demoing, verify that `BLUE_URL` and `RED_URL` in `.env` match the current Wi-Fi/hotspot IP addresses.
 3. **No External Network Dependencies:** The collector operates 100% locally and offline without public internet access.
+

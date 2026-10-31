@@ -152,3 +152,4 @@ export function registryFromJson(json: unknown): EndpointRegistry {
   const entries = obj["endpoints"] as EndpointRegistryEntry[];
   return new EndpointRegistry(entries);
 }
+

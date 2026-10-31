@@ -206,3 +206,4 @@ export function calculateScorecard(db: CollectorDatabase): ScorecardResponse {
     calculatedAt: new Date().toISOString(),
   };
 }
+

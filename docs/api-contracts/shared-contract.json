@@ -54,3 +54,4 @@
     "All amounts are atomic integer strings (BigInt-safe). No USD floats in event data."
   ]
 }
+

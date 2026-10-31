@@ -85,3 +85,4 @@ Events from Red (attacker), Blue (defender), and the Mock Chain (ledger judge) a
 - **Phase 4:** Demo fixtures (`src/demo-fixtures.ts`) and Lovable API documentation (`docs/api-contracts/frontend-api-contract.md`).
 - **Phase 5:** Vitest integration test suite covering ingestion, filtering, correlation, metrics, scorecard, and CORS.
 - **Phase 6:** Service handoff document (`docs/integration/collector-handoff.md`).
+

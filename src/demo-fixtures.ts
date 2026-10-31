@@ -419,3 +419,4 @@ export const DEMO_SCORECARD = {
   calculatedAt: new Date().toISOString(),
   _synthetic: true,
 };
+

@@ -247,3 +247,4 @@ The Collector is the **single source of truth** for all visual telemetry shown t
 #### `POST /demo/seed`
 - **Description:** Seeds the separate `demo_events` table with synthetic fixture data covering all 10 attacks and 1 valid control.
 - **Response `200 OK`:** `{ "seeded": true, "count": 32 }`
+

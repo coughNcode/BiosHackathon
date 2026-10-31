@@ -150,3 +150,4 @@ export function validatePin(
   // Check if it was ever there (already consumed)
   return { pin: null, error: REASON.L4_SIGN_UNPINNED };
 }
+
