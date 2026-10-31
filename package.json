@@ -41,7 +41,13 @@
     "dev": "tsx src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "client": "tsx examples/agent-client.ts"
+    "client": "tsx examples/agent-client.ts",
+    "red:merchant": "tsx src/red/merchant.ts",
+    "red:facilitator": "tsx src/red/facilitator.ts",
+    "red:console": "tsx src/red/console.ts",
+    "test": "tsx --test tests/*.test.ts",
+    "red": "tsx src/red/start.ts",
+    "red:cli": "tsx src/red/cli.ts"
   },
   "dependencies": {
     "@solana/spl-token": "^0.4.15",

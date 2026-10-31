@@ -150,6 +150,27 @@ Set `PAY_TO_ADDRESS` / `SOLANA_PAY_TO_ADDRESS` to receive funds yourself.
     │ ◀──────────────────────────│                              │
 ```
 
+## PayGuard AI — Red Team (Adversarial Testing)
+
+For the BIOS V2 hackathon, the repository includes a controlled attack simulation environment on branch `feature/red-attacks`:
+
+- **Hostile Merchant** (`PORT=4020`): Delivers malicious x402 payment requirements covering scenarios A01–A10.
+- **Mock Facilitator** (`PORT=4030`): Payment settlement simulation with controllable verification/settlement failure modes.
+- **Red Console** (`PORT=4060`): Attack orchestrator, UCB1 bandit adaptive selector, and mutation fuzzer.
+- **Integration Spec**: See [`docs/integration/red-audit.md`](./docs/integration/red-audit.md) for full architecture and protocol audit.
+
+### Commands
+
+| Command | Description |
+|---|---|
+| `npm run red` | Start all 3 Red Team services on Laptop B in a single command |
+| `npm run red:cli list` | List all 10 attack scenarios (A01–A10) with metadata |
+| `npm run red:cli run A01` | Execute a single attack scenario against Blue firewall |
+| `npm run red:cli run-all` | Execute all 10 attack scenarios and print scorecard |
+| `npm run red:cli ucb1` | Run adaptive UCB1 multi-armed bandit attack selector |
+| `npm run red:cli fuzz` | Run mutation fuzzer against Blue payment requirements |
+| `npm test` | Run the automated Red Team test suite |
+
 ## Real backend / API keys
 
 None needed. The policy engine, the ledger and the signing are all real and local — there is no upstream service to key into, and no fixture data anywhere in this repo. The only external calls are to the x402 facilitators that verify and settle payments, and both defaults are free and keyless.
