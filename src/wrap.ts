@@ -1,28 +1,29 @@
 import { wrapFetchWithPayment, type Signer, type MultiNetworkSigner } from "x402-fetch";
 import type { PaymentRequirements } from "x402/types";
 import { PolicyEngine, railOf, type PolicyVerdict, type WalletPolicy } from "./policy.js";
+import { WalletShieldFirewall, type SecurityDecision } from "./firewall.js";
+import { verifyFingerprint, type PaymentRequirementsLike } from "./fingerprint.js";
 
 /**
- * wrapPayerFetch — client-side enforcement of a WalletPolicy on any x402-paying
- * fetch. This is the half of the wallet that matters: the policy check happens
- * *inside* the payment-requirements selection step, so a disallowed payment is
- * never signed. No refund to chase, no on-chain footprint, no trust in a remote
- * daemon.
+ * wrapPayerFetch — client-side enforcement of a WalletPolicy and PayGuard AI
+ * firewall on any x402-paying fetch.
  *
- *   fetch → 402 → choose rail → POLICY CHECK → sign & retry → 200
- *                                    │
- *                                    └── PolicyViolationError (nothing was signed)
- *
- * The 402 offers both rails; the wrapper picks one your signer can actually use,
- * subject to `policy.allowedRails`, then evaluates the spend. Settled spends are
- * recorded in the engine's ledger (the `X-PAYMENT-RESPONSE` header on the 200
- * confirms settlement), so budgets track reality rather than intent.
+ *   fetch → 402 → choose rail → FIREWALL CHECK → POLICY CHECK → SIGNING BOUNDARY → sign & retry → 200
+ *                                    │                 │              │
+ *                                    └── FirewallViolationError       └── TOCTOU_MODIFY blocked
  */
 
 export class PolicyViolationError extends Error {
   constructor(public readonly verdict: PolicyVerdict) {
     super(`Payment blocked by wallet policy: ${verdict.reason}`);
     this.name = "PolicyViolationError";
+  }
+}
+
+export class FirewallViolationError extends Error {
+  constructor(public readonly decision: SecurityDecision) {
+    super(`Payment blocked by PayGuard firewall: ${decision.attackType ?? "UNKNOWN"} (${decision.violatedCheck ?? "check failed"})`);
+    this.name = "FirewallViolationError";
   }
 }
 
@@ -42,13 +43,80 @@ export interface WrapPayerFetchOptions {
   signer: Signer | MultiNetworkSigner;
   /** Policy to enforce, or a pre-built PolicyEngine (shares its ledger). */
   policy: WalletPolicy | PolicyEngine;
+  /** PayGuard AI security firewall instance. */
+  firewall?: WalletShieldFirewall;
   /** Called with every verdict — allowed or not. Useful for audit logs. */
   onVerdict?: (verdict: PolicyVerdict) => void;
+  /** Called with every firewall security decision. */
+  onFirewallDecision?: (decision: SecurityDecision) => void;
   /**
    * Rails this signer can actually sign for. Defaults to both when a
    * MultiNetworkSigner is supplied, otherwise inferred at selection time.
    */
   rails?: ("evm" | "solana")[];
+}
+
+/**
+ * Creates a guarded signer that verifies the payment intent token at the
+ * signing boundary before delegating to the underlying wallet signer.
+ * Closes the TOCTOU gap by preventing mutated payloads from being signed.
+ */
+export function createGuardedSigner(
+  signer: Signer | MultiNetworkSigner,
+  getIntentToken: () => string | undefined,
+  getApprovedReq: () => PaymentRequirements | undefined,
+): Signer | MultiNetworkSigner {
+  const verifyBoundary = (payload?: PaymentRequirementsLike) => {
+    const token = getIntentToken();
+    if (!token) {
+      throw new Error("PayGuard signing boundary: no approved intent token. Signing rejected.");
+    }
+    const req = payload ?? (getApprovedReq() as unknown as PaymentRequirementsLike);
+    if (!req || !verifyFingerprint(req, token)) {
+      throw new Error("PayGuard signing boundary: TOCTOU_MODIFY detected! Payment intent mismatch.");
+    }
+  };
+
+  const wrapSignMethod = (target: unknown, fn: unknown) => {
+    if (typeof fn !== "function") return fn;
+    return async (...args: unknown[]) => {
+      verifyBoundary();
+      return (fn as Function).apply(target, args);
+    };
+  };
+
+  if (isMultiNetwork(signer)) {
+    return new Proxy(signer, {
+      get(target, prop, receiver) {
+        const val = Reflect.get(target, prop, receiver);
+        if (typeof val === "object" && val !== null) {
+          return new Proxy(val, {
+            get(subTarget, subProp, subReceiver) {
+              const subVal = Reflect.get(subTarget, subProp, subReceiver);
+              if (typeof subVal === "function" && (subProp === "sign" || subProp === "signMessage" || subProp === "signTransaction" || subProp === "signTypedData")) {
+                return wrapSignMethod(subTarget, subVal);
+              }
+              return subVal;
+            },
+          });
+        }
+        if (typeof val === "function" && (prop === "sign" || prop === "signMessage" || prop === "signTransaction")) {
+          return wrapSignMethod(target, val);
+        }
+        return val;
+      },
+    });
+  }
+
+  return new Proxy(signer, {
+    get(target, prop, receiver) {
+      const val = Reflect.get(target, prop, receiver);
+      if (typeof val === "function" && (prop === "sign" || prop === "signMessage" || prop === "signTransaction" || prop === "signTypedData")) {
+        return wrapSignMethod(target, val);
+      }
+      return val;
+    },
+  });
 }
 
 export function wrapPayerFetch(
@@ -66,6 +134,8 @@ export function wrapPayerFetch(
 
   return async (input: RequestInfo, init?: RequestInit): Promise<Response> => {
     let approved: { verdict: PolicyVerdict; requirement: PaymentRequirements } | undefined;
+    let approvedToken: string | undefined;
+    let approvedRequirement: PaymentRequirements | undefined;
 
     const select = (accepts: PaymentRequirements[]): PaymentRequirements => {
       const merchant = merchantOf(accepts[0]?.resource, input);
@@ -80,6 +150,18 @@ export function wrapPayerFetch(
       if (usable.length === 0) throw new NoUsableRailError(accepts.map((a) => a.network));
 
       const requirement = preferred(usable, engine.policy.preferRail);
+
+      // CHECK FIREWALL BEFORE POLICY ENGINE (Phase 4 requirement)
+      if (options.firewall) {
+        const shieldResult = options.firewall.validateSync(requirement as unknown as Record<string, unknown>);
+        options.onFirewallDecision?.(shieldResult.decision);
+        if (!shieldResult.allowed) {
+          throw new FirewallViolationError(shieldResult.decision);
+        }
+        approvedToken = shieldResult.intentToken ?? undefined;
+        approvedRequirement = requirement;
+      }
+
       const amountUsd = Number(requirement.maxAmountRequired) / 1e6;
 
       const verdict = engine.check({
@@ -99,7 +181,13 @@ export function wrapPayerFetch(
     // Belt and braces: cap what x402-fetch may ever sign at the policy's
     // per-request max, so a bug in `select` still can't overspend.
     const maxValueAtomic = BigInt(Math.round(engine.policy.perRequestMaxUsd * 1e6));
-    const payingFetch = wrapFetchWithPayment(baseFetch, options.signer, maxValueAtomic, select);
+
+    // Guard signer if firewall is provided
+    const activeSigner = options.firewall
+      ? createGuardedSigner(options.signer, () => approvedToken, () => approvedRequirement)
+      : options.signer;
+
+    const payingFetch = wrapFetchWithPayment(baseFetch, activeSigner, maxValueAtomic, select);
 
     const response = await payingFetch(input, init);
 

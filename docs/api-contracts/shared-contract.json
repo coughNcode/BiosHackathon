@@ -1,0 +1,96 @@
+
+{
+  "services": {
+    "blue_agent": {
+      "port": 4010,
+      "host_env": "BLUE_HOST"
+    },
+    "mock_chain": {
+      "port": 4040,
+      "host_env": "BLUE_HOST"
+    },
+    "red_merchant": {
+      "port": 4020,
+      "host_env": "RED_HOST"
+    },
+    "red_facilitator": {
+      "port": 4030,
+      "host_env": "RED_HOST"
+    },
+    "red_console": {
+      "port": 4060,
+      "host_env": "RED_HOST"
+    },
+    "collector": {
+      "port": 4050,
+      "host_env": "DASHBOARD_HOST"
+    },
+    "frontend": {
+      "port": 5173,
+      "host_env": "DASHBOARD_HOST"
+    }
+  },
+  "shield_check_request": {
+    "paymentRequirements": {
+      "scheme": "string",
+      "network": "string",
+      "maxAmountRequired": "string (atomic integer as string — never a float)",
+      "payTo": "string (wallet address)",
+      "asset": "string (token contract address)",
+      "resource": "string (URL of protected resource)",
+      "maxTimeoutSeconds": "number",
+      "nonce": "string (optional — scheme-specific replay identifier)"
+    }
+  },
+  "shield_check_response": {
+    "allowed": "boolean",
+    "intentToken": "string | null",
+    "decision": {
+      "decisionId": "string",
+      "attackType": "OVERPAYMENT | WRONG_RECIPIENT | FAKE_TOKEN | WRONG_NETWORK | EXPIRED_PAYMENT | REPLAY_ATTACK | DOMAIN_SPOOF | TOCTOU_MODIFY | BUDGET_EXHAUST | INVALID_SCHEMA | null",
+      "violatedCheck": "string | null",
+      "suspiciousField": "string | null",
+      "evidence": {
+        "expected": "any — what policy/registry had",
+        "received": "any — what the challenge contained"
+      },
+      "latencyMs": "number",
+      "decidedAt": "string (ISO 8601)"
+    }
+  },
+  "event_schema": {
+    "eventId": "string (UUID)",
+    "timestamp": "string (ISO 8601)",
+    "runId": "string",
+    "source": "RED | BLUE | CHAIN | FACILITATOR | SYSTEM",
+    "eventType": "string — see event_types below",
+    "severity": "LOW | MEDIUM | HIGH | CRITICAL",
+    "attackId": "string | null",
+    "message": "string",
+    "data": "object — no private keys, no secrets, no raw credentials"
+  },
+  "event_types": [
+    "ATTACK_STARTED",
+    "ATTACK_PAYLOAD_CREATED",
+    "ATTACK_SENT",
+    "BLUE_RESPONSE_RECEIVED",
+    "ATTACK_BLOCKED",
+    "ATTACK_BYPASS",
+    "ATTACK_COMPLETED",
+    "ATTACK_ERROR",
+    "PAYMENT_REQUEST_RECEIVED",
+    "PAYMENT_VALIDATION_STARTED",
+    "PAYMENT_APPROVED",
+    "PAYMENT_BLOCKED",
+    "SIGNER_INVOKED",
+    "SIGNATURE_CREATED",
+    "SETTLEMENT_ATTEMPTED",
+    "PAYMENT_SETTLED",
+    "FUNDS_TRANSFERRED",
+    "NO_TRANSFER",
+    "SECURITY_LAYER_PASSED",
+    "SECURITY_LAYER_FAILED",
+    "FUZZER_CASE_CREATED",
+    "ADAPTIVE_STRATEGY_SELECTED"
+  ]
+}
