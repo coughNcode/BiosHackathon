@@ -30,6 +30,7 @@ export function createConsoleApp() {
 
   // Track running attacks to prevent reporting stale data
   const runningAttacks = new Map<string, { attackId: string; startedAt: string }>();
+  const benchmarkRuns = new Map<string, { status: string; total: number; runs: AttackResult[] }>();
 
   // ── Health ──────────────────────────────────────────────────────────────────
 
@@ -71,8 +72,7 @@ export function createConsoleApp() {
 
       res.json({ runId, attackId: selectedId, status: "running", strategy: "ucb1" });
 
-      executeAndRecord(selectedId).then((result) => {
-        ucb1State = updateArm(ucb1State, selectedId, result.classification);
+      executeAndRecord(selectedId, runId).then(() => {
         runningAttacks.delete(runId);
       });
       return;
@@ -81,6 +81,7 @@ export function createConsoleApp() {
     if (runAll) {
       const runId = generateRunId();
       const attackIds = Object.keys(SCENARIOS);
+      runningAttacks.set(runId, { attackId: "ALL", startedAt: new Date().toISOString() });
 
       res.json({
         runId,
@@ -90,7 +91,7 @@ export function createConsoleApp() {
       });
 
       // Run all attacks sequentially to avoid overwhelming Blue
-      executeAll(attackIds);
+      executeAll(attackIds, runId);
       return;
     }
 
@@ -116,7 +117,7 @@ export function createConsoleApp() {
 
     res.json({ runId, attackId: canonicalId, status: "running" });
 
-    executeAndRecord(canonicalId).then(() => {
+    executeAndRecord(canonicalId, runId).then(() => {
       runningAttacks.delete(runId);
     });
   });
@@ -128,6 +129,11 @@ export function createConsoleApp() {
     const result = runHistory.find((r) => r.runId === runId);
 
     if (!result) {
+      const benchmark = benchmarkRuns.get(runId);
+      if (benchmark) {
+        res.json({ runId, ...benchmark });
+        return;
+      }
       const running = runningAttacks.get(runId);
       if (running) {
         res.json({ runId, status: "running", attackId: running.attackId, startedAt: running.startedAt });
@@ -264,15 +270,26 @@ export function createConsoleApp() {
 
   // ── Internal helpers ────────────────────────────────────────────────────────
 
-  async function executeAndRecord(attackId: string): Promise<AttackResult> {
-    const result = await runAttack(attackId);
+  async function executeAndRecord(attackId: string, runId?: string): Promise<AttackResult> {
+    const result = await runAttack(attackId, runId);
     runHistory.push(result);
+    // Real UCB1 reinforcement from actual attack outcome
+    ucb1State = updateArm(ucb1State, attackId, result.classification);
     return result;
   }
 
-  async function executeAll(attackIds: string[]): Promise<void> {
+  async function executeAll(attackIds: string[], parentRunId?: string): Promise<void> {
+    const runs: AttackResult[] = [];
     for (const id of attackIds) {
-      await executeAndRecord(id);
+      const res = await executeAndRecord(id);
+      runs.push(res);
+      if (parentRunId) {
+        benchmarkRuns.set(parentRunId, { status: "running", total: attackIds.length, runs });
+      }
+    }
+    if (parentRunId) {
+      benchmarkRuns.set(parentRunId, { status: "completed", total: attackIds.length, runs });
+      runningAttacks.delete(parentRunId);
     }
   }
 

@@ -31,7 +31,7 @@ export const RED_CONFIG = {
   blueAdminKey: process.env.BLUE_ADMIN_KEY ?? "dev-admin-key",
 
   /** CORS origins, comma-separated with optional wildcards. */
-  corsOrigins: process.env.CORS_ORIGINS ?? "https://*.lovable.app,http://localhost:5173,http://localhost:3000",
+  corsOrigins: process.env.CORS_ORIGINS ?? "https://*.lovable.app,http://localhost:5173,http://localhost:3000,http://localhost:8080,http://127.0.0.1:8080",
 } as const;
 
 /**

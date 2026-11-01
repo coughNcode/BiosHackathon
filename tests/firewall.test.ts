@@ -43,6 +43,7 @@ let firewall: WalletShieldFirewall;
 let registry: IdentityRegistry;
 
 function setupFirewall(): void {
+  delete process.env.COLLECTOR_URL;
   resetDatabaseForTest();
   registry = new IdentityRegistry("config/trusted-providers.json");
   registry.add(TEST_PROVIDER);
@@ -346,9 +347,16 @@ describe("WalletShieldFirewall", () => {
   it("collector offline does not affect firewall decision", async () => {
     const originalUrl = process.env.COLLECTOR_URL;
     process.env.COLLECTOR_URL = "http://127.0.0.1:1";
-    const result = await firewall.validate(validBaseReq);
-    expect(typeof result.allowed).toBe("boolean");
-    process.env.COLLECTOR_URL = originalUrl ?? "";
+    try {
+      const result = await firewall.validate(validBaseReq);
+      expect(typeof result.allowed).toBe("boolean");
+    } finally {
+      if (originalUrl) {
+        process.env.COLLECTOR_URL = originalUrl;
+      } else {
+        delete process.env.COLLECTOR_URL;
+      }
+    }
   });
 
   // ── Invalid schema is blocked ──────────────────────────────────────────

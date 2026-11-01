@@ -8,7 +8,7 @@ import type { Request, Response, NextFunction } from "express";
 export function createCorsMiddleware() {
   const envOrigins = (
     process.env.CORS_ORIGINS ||
-    "https://*.lovable.app,http://localhost:5173,http://localhost:3000"
+    "https://*.lovable.app,http://localhost:5173,http://localhost:3000,http://localhost:8080,http://127.0.0.1:8080"
   )
     .split(",")
     .map((o) => o.trim())

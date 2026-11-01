@@ -364,11 +364,19 @@ export class WalletShieldFirewall {
 
     const checkAndInsert = db.transaction(() => {
       const existing = db.prepare(
-        "SELECT id FROM seen_nonces WHERE id = ? AND network = ? AND expires_at > ?",
-      ).get(nonceId, req.network, now) as { id: string } | undefined;
+        "SELECT id, expires_at FROM seen_nonces WHERE id = ? AND network = ?",
+      ).get(nonceId, req.network) as { id: string; expires_at: string } | undefined;
 
       if (existing) {
-        return false;
+        if (existing.expires_at > now) {
+          // Nonce is currently active — replay attempt detected
+          return false;
+        }
+        // Nonce was expired — refresh timestamp window
+        db.prepare(
+          "UPDATE seen_nonces SET settled_at = ?, expires_at = ? WHERE id = ? AND network = ?",
+        ).run(now, expiresAt, nonceId, req.network);
+        return true;
       }
 
       db.prepare(

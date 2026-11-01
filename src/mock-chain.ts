@@ -56,7 +56,7 @@ const app = express();
 app.use(express.json());
 
 // CORS configuration
-const allowedOrigins = (process.env.CORS_ORIGINS || "https://*.lovable.app,http://localhost:5173,http://localhost:3000")
+const allowedOrigins = (process.env.CORS_ORIGINS || "https://*.lovable.app,http://localhost:5173,http://localhost:3000,http://localhost:8080,http://127.0.0.1:8080")
   .split(",")
   .map((o) => o.trim())
   .filter(Boolean);
@@ -112,6 +112,30 @@ app.get("/transactions", (req, res) => {
   }
 
   res.json({ transactions: filtered, mockChain: true });
+});
+
+// ── GET /transfers ───────────────────────────────────────────────────────
+
+app.get("/transfers", (req, res) => {
+  const runId = req.query.runId as string | undefined;
+  if (!runId) {
+    const settled = transactions.filter((tx) => tx.status === "settled");
+    res.json({
+      transferred: settled.length > 0,
+      txHash: settled[0]?.txId ?? null,
+      transactions: settled,
+      mockChain: true,
+    });
+    return;
+  }
+
+  const tx = transactions.find((t) => t.runId === runId && t.status === "settled");
+  res.json({
+    transferred: !!tx,
+    txHash: tx ? tx.txId : null,
+    transaction: tx ?? null,
+    mockChain: true,
+  });
 });
 
 // ── POST /transactions/execute ───────────────────────────────────────────

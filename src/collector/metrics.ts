@@ -144,8 +144,14 @@ export function calculateScorecard(db: CollectorDatabase): ScorecardResponse {
       errors++;
     }
 
-    if (r.attackId && !perAttackMap.has(r.attackId)) {
-      perAttackMap.set(r.attackId, r);
+    if (r.attackId) {
+      if (!perAttackMap.has(r.attackId)) {
+        perAttackMap.set(r.attackId, r);
+      }
+      const prefix = r.attackId.split("_")[0];
+      if (prefix && !perAttackMap.has(prefix)) {
+        perAttackMap.set(prefix, r);
+      }
     }
   }
 
@@ -170,9 +176,10 @@ export function calculateScorecard(db: CollectorDatabase): ScorecardResponse {
   for (const id of allKnownIds) {
     const catalog = ATTACK_CATALOG[id] || {
       name: `Attack ${id}`,
-      expected: id === "A10" ? "ALLOW" : "BLOCK",
+      expected: id.startsWith("A10") ? "ALLOW" : "BLOCK",
     };
-    const run = perAttackMap.get(id);
+    const prefix = id.split("_")[0];
+    const run = perAttackMap.get(id) || (prefix ? perAttackMap.get(prefix) : undefined);
 
     perAttack.push({
       attackId: id,

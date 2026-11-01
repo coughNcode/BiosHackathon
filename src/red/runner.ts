@@ -41,9 +41,9 @@ export function generateRunId(): string {
 /**
  * Run a single attack scenario against the Blue firewall.
  */
-export async function runAttack(attackId: string): Promise<AttackResult> {
+export async function runAttack(attackId: string, customRunId?: string): Promise<AttackResult> {
   const canonicalId = normalizeScenarioId(attackId);
-  const runId = generateRunId();
+  const runId = customRunId ?? generateRunId();
   const startedAt = new Date().toISOString();
   const startMs = Date.now();
   const scenario = SCENARIOS[canonicalId];
@@ -136,6 +136,85 @@ async function runSimpleAttack(
       data: { error: result.error },
     });
     return result;
+  }
+
+  // End-to-end Valid Payment Control Lifecycle (A10_VALID):
+  // 1. Red Merchant challenge created (already in payload)
+  // 2. Sent to Blue Agent (above)
+  // 3 & 4. Blue validated and approved
+  // 5. Legitimate Signer Boundary Invoked
+  // 6. Mock Facilitator Verification & Settlement
+  // 7. Mock Chain Transfer Recorded
+  const isControl = attackId === "A10_VALID" || getCatalogEntry(attackId)?.expectedDecision === "ALLOW";
+  if (isControl && blueResponse.allowed && blueResponse.intentToken) {
+    try {
+      // Step 5: Invoke protected signer boundary at Blue Agent
+      await emitEvent({
+        source: "RED",
+        eventType: "ATTACK_SENT",
+        runId,
+        attackId,
+        data: { stage: "signer_boundary", target: `${RED_CONFIG.blueUrl}/agent/run` },
+      });
+
+      await fetch(`${RED_CONFIG.blueUrl}/agent/run`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          paymentRequirements: payload,
+          intentToken: blueResponse.intentToken,
+          runId,
+          attackId,
+        }),
+      });
+    } catch {}
+
+    // Step 6: Mock Facilitator verification and settlement simulation
+    const facilitatorUrl = process.env.FACILITATOR_URL || `http://localhost:${RED_CONFIG.facilitatorPort}`;
+    try {
+      await emitEvent({
+        source: "RED",
+        eventType: "ATTACK_SENT",
+        runId,
+        attackId,
+        data: { stage: "facilitator_settlement", facilitatorUrl },
+      });
+
+      await fetch(`${facilitatorUrl}/verify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          paymentRequirements: payload,
+          intentToken: blueResponse.intentToken,
+          runId,
+        }),
+      });
+
+      await fetch(`${facilitatorUrl}/settle`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          paymentRequirements: payload,
+          intentToken: blueResponse.intentToken,
+          runId,
+        }),
+      });
+    } catch {}
+
+    // Step 7: Mock Chain records the simulated transfer
+    try {
+      await fetch(`${RED_CONFIG.mockChainUrl}/transactions/execute`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          from: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+          to: payload.payTo,
+          amount: payload.maxAmountRequired,
+          network: payload.network,
+          runId,
+        }),
+      });
+    } catch {}
   }
 
   // Check mock chain — did funds move?
